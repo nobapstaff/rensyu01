@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f5">
+  <meta name="description" content="好きなことから、新しいつながりを。趣味でつながるコミュニティアプリ。">
+  <title>mingle — 好きなことで、つながろう。</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #20251f;
+      --muted: #81877e;
+      --line: #e9ebe5;
+      --paper: #fff;
+      --canvas: #f7f8f5;
+      --green: #376b4b;
+      --green-dark: #28563a;
+      --mint: #e8f0e8;
+      --orange: #e99066;
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); min-height: 100vh; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .shell { width: min(1180px, 100% - 64px); margin: 0 auto; }
+    header { height: 78px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .brand { position: relative; display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 750; letter-spacing: -.7px; }
+    .brand-mark { width: 40px; height: 40px; display: grid; place-items: center; padding: 0; border: 0; background: var(--green); color: white; border-radius: 12px; font-size: 20px; }
+    .brand-mark img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+    .brand-icon-editor { position: absolute; z-index: 3; top: calc(100% + 12px); left: 0; width: 204px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 8px 24px #26372514; }
+    .brand-icon-editor[hidden] { display: none; }
+    .brand-icon-editor p { margin: 0 0 10px; color: var(--ink); font-size: 11px; font-weight: 650; }
+    .brand-icon-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .brand-icon-options button { width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: #f7f8f5; font-size: 17px; }
+    .brand-icon-options button:hover, .brand-icon-options button.selected { border-color: var(--green); background: var(--mint); }
+    .header-right { display: flex; align-items: center; gap: 22px; }
+    .location { position: relative; color: var(--muted); font-size: 13px; }
+    .location strong { color: var(--ink); font-weight: 600; }
+    .area-button { border: 0; padding: 5px 0 5px 5px; background: transparent; color: var(--ink); font-weight: 600; }
+    .area-editor { position: absolute; z-index: 3; top: calc(100% + 10px); right: 0; width: 250px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 8px 24px #26372514; }
+    .area-editor[hidden] { display: none; }
+    .area-editor label { display: block; margin-bottom: 8px; color: var(--ink); font-size: 11px; font-weight: 650; }
+    .area-editor input { width: 100%; height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; outline-color: var(--green); font-size: 12px; }
+    .area-editor-actions { display: flex; justify-content: end; gap: 7px; margin-top: 10px; }
+    .area-editor-actions button { padding: 7px 10px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--muted); font-size: 10px; }
+    .area-editor-actions button[type="submit"] { border-color: var(--green); background: var(--green); color: white; }
+    .profile-control { position: relative; }
+    .profile-control::after { content: ""; position: absolute; right: 1px; bottom: 2px; width: 11px; height: 11px; border: 2px solid var(--canvas); border-radius: 50%; background: #79b381; pointer-events: none; }
+    .profile-control.offline::after { background: #a0a49d; }
+    .profile-dot { width: 52px; height: 52px; padding: 0; border: 2px solid white; box-shadow: 0 0 0 1px var(--line); border-radius: 50%; display: grid; place-items: center; background: #e9d6c4; font-size: 24px; }
+    .profile-dot img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .icon-editor { position: absolute; z-index: 3; top: calc(100% + 10px); right: 0; width: 204px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: 0 8px 24px #26372514; }
+    .icon-editor[hidden] { display: none; }
+    .icon-editor p { margin: 0 0 10px; color: var(--ink); font-size: 11px; font-weight: 650; }
+    .photo-upload { display: block; width: 100%; margin-bottom: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--green); text-align: center; font-size: 10px; font-weight: 650; cursor: pointer; }
+    .photo-upload:hover { background: var(--mint); }
+    .photo-input { display: none; }
+    .icon-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .icon-options button { width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: #f7f8f5; font-size: 18px; }
+    .icon-options button:hover, .icon-options button.selected { border-color: var(--green); background: var(--mint); }
+    #profile-avatar { width: 72px; height: 72px; display: grid; place-items: center; margin: 0 auto; overflow: hidden; border-radius: 50%; background: #e9d6c4; font-size: 30px; }
+    #profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px; padding: 38px 0 70px; }
+    aside { padding-top: 7px; }
+    .nav-label { color: #a0a49d; font-size: 10px; letter-spacing: 1.5px; font-weight: 700; margin: 0 0 13px 13px; }
+    .nav { display: grid; gap: 5px; }
+    .nav button { display: flex; align-items: center; gap: 13px; width: 100%; padding: 12px 14px; border: 0; border-radius: 11px; color: #747a71; background: transparent; text-align: left; font-size: 13px; font-weight: 550; transition: .18s ease; }
+    .nav button:hover { background: #eef0eb; }
+    .nav button.active { background: var(--mint); color: var(--green-dark); font-weight: 700; }
+    .nav-icon { width: 19px; text-align: center; font-size: 17px; }
+    .side-note { margin-top: 42px; padding: 18px 15px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+    .side-note .leaf { font-size: 20px; }
+    .side-note p { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.8; }
+    main { min-width: 0; }
+    .welcome { display: flex; justify-content: space-between; align-items: end; margin-bottom: 25px; }
+    .eyebrow { color: var(--green); font-size: 11px; letter-spacing: 1.7px; font-weight: 700; }
+    h1 { margin: 7px 0 0; font-size: clamp(24px, 3vw, 31px); line-height: 1.4; letter-spacing: -1px; }
+    .welcome p { color: var(--muted); font-size: 13px; margin: 7px 0 0; }
+    .date { color: var(--muted); font-size: 12px; white-space: nowrap; padding-bottom: 4px; }
+    .search-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .searchbox { display: flex; flex: 1; gap: 10px; align-items: center; background: white; border: 1px solid var(--line); border-radius: 11px; padding: 0 14px; min-width: 0; }
+    .searchbox span { color: #a2a69f; font-size: 18px; }
+    .searchbox input { border: 0; outline: 0; width: 100%; height: 44px; color: var(--ink); background: transparent; font-size: 12px; }
+    .searchbox input::placeholder { color: #a2a69f; }
+    .filter-button { border: 1px solid var(--line); background: white; border-radius: 11px; padding: 0 16px; color: #555c53; font-size: 12px; }
+    .filter-button:hover { border-color: #aab6a9; }
+    .section-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 0 13px; }
+    .section-heading h2 { margin: 0; font-size: 14px; font-weight: 700; }
+    .section-heading button { border: 0; background: transparent; color: var(--green); font-size: 11px; font-weight: 650; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+    .chip { border: 1px solid var(--line); background: white; border-radius: 30px; padding: 7px 13px; color: #73796f; font-size: 11px; transition: .18s; }
+    .chip:hover { border-color: #aab6a9; }
+    .chip.selected { border-color: var(--green); background: var(--green); color: white; }
+    .people-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+    .person-card { min-width: 0; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 16px 15px 14px; transition: transform .18s, box-shadow .18s; }
+    .person-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #2637250d; }
+    .card-top { display: flex; align-items: start; justify-content: space-between; }
+    .avatar { width: 54px; height: 54px; border-radius: 18px; display: grid; place-items: center; font-size: 26px; }
+    .online { display: inline-flex; align-items: center; gap: 5px; color: #788177; font-size: 9px; }
+    .online::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #79b381; }
+    .person-card h3 { margin: 13px 0 4px; font-size: 14px; }
+    .person-meta { color: var(--muted); font-size: 10px; }
+    .person-bio { height: 35px; margin: 10px 0 11px; color: #666d63; font-size: 10px; line-height: 1.8; overflow: hidden; }
+    .tags { min-height: 24px; display: flex; gap: 5px; flex-wrap: wrap; }
+    .tag { background: #f2f4ef; color: #73796f; padding: 4px 7px; border-radius: 5px; font-size: 9px; }
+    .connect { width: 100%; border: 1px solid #dfe7dd; border-radius: 8px; background: white; color: var(--green); padding: 8px; margin-top: 13px; font-size: 10px; font-weight: 700; transition: .18s; }
+    .connect:hover, .connect.connected { background: var(--green); color: white; border-color: var(--green); }
+    .empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 45px 10px; background: white; border: 1px solid var(--line); border-radius: 14px; font-size: 13px; }
+    .event-banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 25px; padding: 19px 21px; border-radius: 13px; background: #eff2e9; }
+    .event-banner .event-kicker { color: var(--green); font-size: 9px; font-weight: 700; letter-spacing: 1.1px; }
+    .event-banner h3 { margin: 5px 0 3px; font-size: 13px; }
+    .event-banner p { margin: 0; color: #777e73; font-size: 10px; }
+    .event-banner button { flex: 0 0 auto; padding: 9px 13px; border: 0; border-radius: 8px; background: white; color: var(--green); font-size: 10px; font-weight: 700; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 15px); padding: 11px 18px; border-radius: 9px; background: #263c2c; color: white; font-size: 12px; box-shadow: 0 6px 25px #0002; opacity: 0; pointer-events: none; transition: .22s; z-index: 5; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .mobile-nav { display: none; }
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 170px minmax(0, 1fr); gap: 28px; }
+      .people-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px) {
+      .shell { width: min(100% - 36px, 480px); }
+      header { height: 65px; }
+      .location { display: none; }
+      .layout { display: block; padding: 28px 0 100px; }
+      aside { display: none; }
+      .welcome { margin-bottom: 21px; }
+      .date { font-size: 10px; }
+      .search-row { gap: 7px; }
+      .filter-button { padding: 0 12px; }
+      .chips { flex-wrap: nowrap; overflow: auto; margin-right: -18px; padding-bottom: 4px; scrollbar-width: none; }
+      .chips::-webkit-scrollbar { display: none; }
+      .chip { flex: 0 0 auto; }
+      .people-grid { gap: 10px; }
+      .person-card { padding: 13px 11px 11px; }
+      .avatar { width: 48px; height: 48px; font-size: 23px; }
+      .event-banner { padding: 16px; }
+      .mobile-nav { position: fixed; z-index: 4; display: flex; justify-content: space-around; bottom: 0; left: 0; width: 100%; padding: 9px 5px max(9px, env(safe-area-inset-bottom)); background: #ffffffed; border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
+      .mobile-nav button { border: 0; background: transparent; color: #858b82; display: grid; justify-items: center; gap: 3px; font-size: 9px; min-width: 54px; }
+      .mobile-nav button span { font-size: 18px; }
+      .mobile-nav button.active { color: var(--green); font-weight: 700; }
+    }
+    @media (max-width: 365px) {
+      .people-grid { grid-template-columns: 1fr; }
+      .person-card { padding: 15px; }
+      .person-bio { height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <button class="brand-mark" id="brand-mark" aria-label="アプリアイコンを変更" aria-expanded="false" aria-controls="brand-icon-editor"></button>
+        <span id="app-name"></span>
+        <div class="brand-icon-editor" id="brand-icon-editor" hidden>
+          <p>アプリアイコンを選ぶ</p>
+          <label class="photo-upload" for="brand-photo-input">写真を選ぶ</label>
+          <input class="photo-input" id="brand-photo-input" type="file" accept="image/*">
+          <div class="brand-icon-options" id="brand-icon-options"></div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="location">あなたのエリア <button class="area-button" id="area-button" aria-expanded="false" aria-controls="area-editor"><strong id="area-name"></strong>⌄</button>
+          <form class="area-editor" id="area-editor" hidden>
+            <label for="area-input">エリア名を変更</label>
+            <input id="area-input" maxlength="40" required autocomplete="address-level2">
+            <div class="area-editor-actions"><button type="button" id="area-cancel">キャンセル</button><button type="submit">保存</button></div>
+          </form>
+        </div>
+        <div class="profile-control">
+          <button class="profile-dot" id="profile-icon-button" aria-label="プロフィールアイコンを変更" aria-expanded="false" aria-controls="icon-editor"><span id="header-icon"></span></button>
+          <div class="icon-editor" id="icon-editor" hidden>
+            <p>アイコンを選ぶ</p>
+            <label class="photo-upload" for="profile-photo-input">写真を選ぶ</label>
+            <input class="photo-input" id="profile-photo-input" type="file" accept="image/*">
+            <div class="icon-options" id="icon-options"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="layout">
+      <aside>
+        <p class="nav-label">メニュー</p>
+        <nav class="nav" aria-label="メインメニュー">
+          <button class="active" data-page="discover"><span class="nav-icon">⌕</span>ヒトをミツケル</button>
+          <button data-page="messages"><span class="nav-icon">▱</span>メッセージ</button>
+          <button data-page="profile"><span class="nav-icon">◉</span>プロフィール</button>
+          <button data-page="settings"><span class="nav-icon">⚙</span>セッティング</button>
+        </nav>
+        <div class="side-note"><span class="leaf">🌱</span><p>好きなことから、<br>気の合う人とのつながりを。</p></div>
+      </aside>
+      <main id="main"></main>
+    </div>
+  </div>
+  <nav class="mobile-nav" aria-label="モバイルメニュー">
+    <button class="active" data-page="discover"><span>⌕</span>ミツケル</button>
+    <button data-page="messages"><span>▱</span>メッセージ</button>
+    <button data-page="profile"><span>◉</span>プロフィール</button>
+    <button data-page="settings"><span>⚙</span>セッティング</button>
+  </nav>
+  <div class="toast" role="status" aria-live="polite"></div>
+  <script>
+    const people = [];
+    const interests = ["ゲーム"];
+    let activeInterest = "ゲーム";
+    let areaName = localStorage.getItem("mingle-area") || "東京・渋谷";
+    let profileIcon = localStorage.getItem("mingle-profile-icon") || "🌿";
+    let profilePhoto = localStorage.getItem("mingle-profile-photo");
+    let onlineStatus = localStorage.getItem("mingle-online-status") || "online";
+    const blockedUsers = JSON.parse(localStorage.getItem("mingle-blocked-users") || "[]");
+    const profileIcons = ["🌿", "😊", "😎", "🐱", "🐶", "🐼", "🦊", "🐸", "🌸", "🎮"];
+    let brandIcon = localStorage.getItem("mingle-brand-icon") || "m";
+    let brandPhoto = localStorage.getItem("mingle-brand-photo");
+    let appName = localStorage.getItem("mingle-app-name") || "mingle";
+    const brandIcons = ["m", "🎮", "🕹️", "🎲", "👾", "⭐", "💚", "✨", "🎯", "♟️"];
+    let activePage = "discover";
+    let searchTerm = "";
+    const connected = new Set();
+    const joinedEvents = new Set();
+    const main = document.querySelector("#main");
+    const toast = document.querySelector(".toast");
+    const areaButton = document.querySelector("#area-button");
+    const areaEditor = document.querySelector("#area-editor");
+    const areaInput = document.querySelector("#area-input");
+    const iconButton = document.querySelector("#profile-icon-button");
+    const iconEditor = document.querySelector("#icon-editor");
+    const photoInput = document.querySelector("#profile-photo-input");
+    const brandMark = document.querySelector("#brand-mark");
+    const brandIconEditor = document.querySelector("#brand-icon-editor");
+    const brandPhotoInput = document.querySelector("#brand-photo-input");
+    const renderAppName = () => {
+      document.querySelector("#app-name").textContent = appName;
+      document.title = `${appName} — 好きなことで、つながろう。`;
+    };
+    const renderBrandIcon = () => {
+      brandMark.replaceChildren();
+      if (brandPhoto) {
+        const image = document.createElement("img");
+        image.src = brandPhoto;
+        image.alt = "アプリアイコンの写真";
+        brandMark.append(image);
+      } else {
+        brandMark.textContent = brandIcon;
+      }
+      document.querySelectorAll("[data-brand-icon]").forEach((button) => {
+        const selected = !brandPhoto && button.dataset.brandIcon === brandIcon;
+        button.classList.toggle("selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+    };
+    document.querySelector("#brand-icon-options").innerHTML = brandIcons.map((icon) =>
+      `<button type="button" data-brand-icon="${icon}" aria-label="${icon}" title="${icon}">${icon}</button>`
+    ).join("");
+    brandMark.addEventListener("click", () => {
+      brandIconEditor.hidden = !brandIconEditor.hidden;
+      brandMark.setAttribute("aria-expanded", String(!brandIconEditor.hidden));
+    });
+    document.querySelector("#brand-icon-options").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-brand-icon]");
+      if (!button) return;
+      brandIcon = button.dataset.brandIcon;
+      brandPhoto = null;
+      localStorage.setItem("mingle-brand-icon", brandIcon);
+      localStorage.removeItem("mingle-brand-photo");
+      renderBrandIcon();
+      brandIconEditor.hidden = true;
+      brandMark.setAttribute("aria-expanded", "false");
+      showToast("アプリアイコンを変更しました");
+    });
+    brandPhotoInput.addEventListener("change", async () => {
+      const file = brandPhotoInput.files[0];
+      if (!file) return;
+      brandPhotoInput.value = "";
+      try {
+        const photo = await makeIconPhoto(file);
+        localStorage.setItem("mingle-brand-photo", photo);
+        localStorage.removeItem("mingle-brand-icon");
+        brandPhoto = photo;
+        renderBrandIcon();
+        brandIconEditor.hidden = true;
+        brandMark.setAttribute("aria-expanded", "false");
+        showToast("アプリアイコンの写真を設定しました");
+      } catch (error) {
+        console.error("アプリアイコン写真の保存に失敗しました", error);
+        showToast(error.message || "写真を保存できませんでした。別の画像をお試しください");
+      }
+    });
+    const renderOnlineStatus = () => {
+      document.querySelector(".profile-control").classList.toggle("offline", onlineStatus === "offline");
+      document.querySelectorAll("[data-online-status]").forEach((button) => {
+        const selected = button.dataset.onlineStatus === onlineStatus;
+        button.classList.toggle("connected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+      iconButton.setAttribute("aria-label", `プロフィールアイコンを変更（${onlineStatus === "online" ? "オンライン" : "オフライン"}）`);
+    };
+    const setIconContent = (container) => {
+      container.replaceChildren();
+      if (profilePhoto) {
+        const image = document.createElement("img");
+        image.src = profilePhoto;
+        image.alt = "プロフィール写真";
+        container.append(image);
+      } else {
+        container.textContent = profileIcon;
+      }
+    };
+    const renderProfileIcon = () => {
+      setIconContent(document.querySelector("#header-icon"));
+      const profileAvatar = document.querySelector("#profile-avatar");
+      if (profileAvatar) setIconContent(profileAvatar);
+      document.querySelectorAll("[data-profile-icon]").forEach((button) => {
+        const selected = !profilePhoto && button.dataset.profileIcon === profileIcon;
+        button.classList.toggle("selected", selected);
+        button.setAttribute("aria-pressed", String(selected));
+      });
+    };
+    document.querySelector("#icon-options").innerHTML = profileIcons.map((icon) =>
+      `<button type="button" data-profile-icon="${icon}" aria-label="${icon}" title="${icon}">${icon}</button>`
+    ).join("");
+    iconButton.addEventListener("click", () => {
+      iconEditor.hidden = !iconEditor.hidden;
+      iconButton.setAttribute("aria-expanded", String(!iconEditor.hidden));
+    });
+    document.querySelector("#icon-options").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-profile-icon]");
+      if (!button) return;
+      profileIcon = button.dataset.profileIcon;
+      profilePhoto = null;
+      localStorage.setItem("mingle-profile-icon", profileIcon);
+      localStorage.removeItem("mingle-profile-photo");
+      renderProfileIcon();
+      iconEditor.hidden = true;
+      iconButton.setAttribute("aria-expanded", "false");
+      showToast("プロフィールアイコンを変更しました");
+    });
+    photoInput.addEventListener("change", async () => {
+      const file = photoInput.files[0];
+      if (!file) return;
+      photoInput.value = "";
+      if (!file.type.startsWith("image/")) {
+        showToast("画像ファイルを選択してください");
+        return;
+      }
+      try {
+        const photo = await makeIconPhoto(file);
+        localStorage.setItem("mingle-profile-photo", photo);
+        localStorage.removeItem("mingle-profile-icon");
+        profilePhoto = photo;
+        renderProfileIcon();
+        iconEditor.hidden = true;
+        iconButton.setAttribute("aria-expanded", "false");
+        showToast("プロフィール写真を設定しました");
+      } catch (error) {
+        console.error("プロフィール写真の保存に失敗しました", error);
+        showToast(error.message || "写真を保存できませんでした。別の画像をお試しください");
+      }
+    });
+    const renderAreaName = () => { document.querySelector("#area-name").textContent = areaName; };
+    const closeAreaEditor = () => {
+      areaEditor.hidden = true;
+      areaButton.setAttribute("aria-expanded", "false");
+    };
+    areaButton.addEventListener("click", () => {
+      areaInput.value = areaName;
+      areaEditor.hidden = false;
+      areaButton.setAttribute("aria-expanded", "true");
+      areaInput.focus();
+      areaInput.select();
+    });
+    document.querySelector("#area-cancel").addEventListener("click", closeAreaEditor);
+    areaEditor.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const newAreaName = areaInput.value.trim();
+      if (!newAreaName) {
+        areaInput.focus();
+        return;
+      }
+      localStorage.setItem("mingle-area", newAreaName);
+      areaName = newAreaName;
+      renderAreaName();
+      closeAreaEditor();
+      showToast("エリア名を更新しました");
+    });
+    let toastTimer;
+    const showToast = (text) => {
+      toast.textContent = text;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+    };
+    async function makeIconPhoto(file) {
+      if (!file.type.startsWith("image/")) throw new Error("画像ファイルを選択してください");
+      if (file.size > 10 * 1024 * 1024) throw new Error("写真は10MB以下のファイルを選んでください");
+      const bitmap = await createImageBitmap(file);
+      try {
+        const size = 256;
+        const cropSize = Math.min(bitmap.width, bitmap.height);
+        if (!cropSize) throw new Error("この画像は読み込めません");
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("画像を処理できませんでした");
+        context.drawImage(bitmap, (bitmap.width - cropSize) / 2, (bitmap.height - cropSize) / 2, cropSize, cropSize, 0, 0, size, size);
+        return canvas.toDataURL("image/jpeg", 0.82);
+      } finally {
+        bitmap.close();
+      }
+    }
+    const setPage = (page) => {
+      activePage = page;
+      document.querySelectorAll("[data-page]").forEach((button) => button.classList.toggle("active", button.dataset.page === page));
+      render();
+    };
+    const renderDiscover = () => {
+      const filtered = people.filter((person) => {
+        if (blockedUsers.some((blocked) => blocked.id === String(person.id))) return false;
+        const matchesInterest = person.tags.includes(activeInterest);
+        const text = `${person.name} ${person.area} ${person.bio} ${person.tags.join(" ")}`.toLowerCase();
+        return matchesInterest && text.includes(searchTerm.toLowerCase());
+      });
+      main.innerHTML = `
+        <section class="welcome">
+          <div><div class="eyebrow">FIND YOUR PEOPLE</div><h1>好きなことで、つながろう。</h1><p>共通の「好き」がある人を見つけてみませんか？</p></div>
+          <div class="date">今日、新しい出会いを。</div>
+        </section>
+        <label class="search-row"><span class="searchbox"><span>⌕</span><input id="search" type="search" placeholder="名前や趣味で検索..." value="${escapeHtml(searchTerm)}"></span></label>
+        <section><div class="section-heading"><h2>興味のあること</h2></div>
+          <div class="chips">${interests.map((interest) => `<button class="chip ${interest === activeInterest ? "selected" : ""}" data-interest="${interest}">🎮 ${interest}</button>`).join("")}</div>
+        </section>
+        <section><div class="section-heading"><h2>ゲーム好きの人 <span style="color:#92988f;font-weight:400">· ${filtered.length}人</span></h2></div>
+          <div class="people-grid">${filtered.length ? filtered.map(personCard).join("") : '<div class="empty-state">まだメンバーはいません。</div>'}</div>
+        </section>
+        `;
+      main.querySelector("#search").addEventListener("input", (event) => { searchTerm = event.target.value; renderDiscover(); const input = main.querySelector("#search"); input.focus(); input.setSelectionRange(searchTerm.length, searchTerm.length); });
+      main.querySelectorAll("[data-interest]").forEach((button) => button.addEventListener("click", () => { activeInterest = button.dataset.interest; render(); }));
+      main.querySelectorAll("[data-connect]").forEach((button) => button.addEventListener("click", () => {
+        const id = Number(button.dataset.connect);
+        if (connected.has(id)) { connected.delete(id); showToast("つながりを解除しました"); }
+        else { connected.add(id); showToast(`${people.find((person) => person.id === id).name}さんに「つながりたい」を送りました 🌱`); }
+        renderDiscover();
+      }));
+      main.querySelectorAll("[data-block-person]").forEach((button) => button.addEventListener("click", () => {
+        const person = people.find((entry) => String(entry.id) === button.dataset.blockPerson);
+        if (person) blockUser(String(person.id), person.name);
+      }));
+    };
+    const saveBlockedUsers = () => localStorage.setItem("mingle-blocked-users", JSON.stringify(blockedUsers));
+    const blockUser = (id, name) => {
+      if (blockedUsers.some((blocked) => blocked.id === id)) {
+        showToast("このユーザーはすでにブロックしています");
+        return;
+      }
+      blockedUsers.push({ id, name });
+      connected.delete(Number(id));
+      saveBlockedUsers();
+      showToast(`${name}さんをブロックしました`);
+      render();
+    };
+    function personCard(person) {
+      return `<article class="person-card"><div class="card-top"><div class="avatar" style="background:${person.color}">${person.emoji}</div><span class="online">${person.online ? "オンライン" : "最近アクティブ"}</span></div>
+        <h3>${person.name} <span style="font-weight:400;color:#73796f">${person.age}</span></h3><div class="person-meta">📍 ${person.area} · あなたの近く</div>
+        <p class="person-bio">${person.bio}</p><div class="tags">${person.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
+        <button class="connect ${connected.has(person.id) ? "connected" : ""}" data-connect="${person.id}">${connected.has(person.id) ? "✓　つながり申請中" : "+　つながりたい"}</button>
+        <button class="connect" data-block-person="${person.id}" style="margin-top:6px;color:#8a554b">ブロック</button></article>`;
+    }
+    const events = [];
+    const renderEvents = () => {
+      main.innerHTML = `<section class="welcome"><div><div class="eyebrow">MEET IN REAL LIFE</div><h1>好きなことを、一緒に。</h1><p>気軽に参加できる小さなイベントを見つけよう。</p></div></section>
+        <div class="section-heading"><h2>近くのイベント</h2></div>
+        <div class="event-list">${events.length ? events.map((event) => `<article style="display:flex;align-items:center;gap:15px;padding:16px;margin-bottom:10px;border:1px solid var(--line);border-radius:13px;background:white"><div style="width:57px;height:57px;border-radius:11px;background:${event.color};display:grid;place-items:center;font-size:24px;flex:0 0 auto">${event.emoji}</div><div style="flex:1;min-width:0"><div style="color:var(--green);font-size:10px;font-weight:700">${event.date}（${event.day}）</div><h3 style="font-size:13px;margin:4px 0">${event.title}</h3><div style="color:var(--muted);font-size:10px">${event.detail}</div></div><button data-join="${event.id}" class="connect ${joinedEvents.has(event.id) ? "connected" : ""}" style="width:auto;padding:8px 12px;margin:0;white-space:nowrap">${joinedEvents.has(event.id) ? "参加予定 ✓" : "参加する +"}</button></article>`).join("") : '<div class="empty-state">まだイベントはありません。</div>'}</div>`;
+      main.querySelectorAll("[data-join]").forEach((button) => button.addEventListener("click", () => {
+        const id = Number(button.dataset.join);
+        if (joinedEvents.has(id)) { joinedEvents.delete(id); showToast("イベントの参加を取り消しました"); }
+        else { joinedEvents.add(id); showToast("イベントに参加登録しました！"); }
+        renderEvents();
+      }));
+    };
+    const renderMessages = () => {
+      const matches = people.filter((person) => connected.has(person.id) && !blockedUsers.some((blocked) => blocked.id === String(person.id)));
+      main.innerHTML = `<section class="welcome"><div><div class="eyebrow">SAY HELLO</div><h1>メッセージ</h1><p>つながりたいを送った人との会話はこちらから。</p></div></section>
+        <section style="padding:35px 20px;text-align:center;background:white;border:1px solid var(--line);border-radius:14px">${matches.length ? `<div style="display:grid;gap:10px">${matches.map((person) => `<button data-message="${person.id}" style="display:flex;align-items:center;gap:12px;text-align:left;background:white;border:1px solid var(--line);border-radius:11px;padding:12px"><span class="avatar" style="width:44px;height:44px;background:${person.color};font-size:21px">${person.emoji}</span><span><strong style="font-size:12px">${person.name}</strong><br><span style="font-size:10px;color:var(--muted)">つながり申請中 · メッセージを送ってみましょう</span></span></button>`).join("")}</div>` : `<div style="font-size:31px">💬</div><h3 style="font-size:14px">これから始まる会話があります</h3><p style="font-size:11px;color:var(--muted);line-height:1.9">気になる人に「つながりたい」を送ると、<br>ここからメッセージを始められます。</p><button class="connect" id="find-people" style="max-width:200px">人を見つける →</button>`}</section>`;
+      main.querySelector("#find-people")?.addEventListener("click", () => setPage("discover"));
+      main.querySelectorAll("[data-message]").forEach((button) => button.addEventListener("click", () => showToast("メッセージ機能は準備中です")));
+    };
+    const renderProfile = () => {
+      main.innerHTML = `<section class="welcome"><div><div class="eyebrow">YOUR PROFILE</div><h1>プロフィール</h1><p>あなたの「好き」をシェアしよう。</p></div></section>
+        <section style="padding:25px;background:white;border:1px solid var(--line);border-radius:14px;text-align:center"><div id="profile-avatar" style="font-size:30px"></div><h2 style="font-size:14px;margin:10px 0">プロフィールは未登録です</h2><p style="font-size:11px;color:#6c7369;line-height:1.9;margin:10px 0 19px">プロフィール登録機能は準備中です。</p>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap"><button class="connect" id="share-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを共有</button><button class="connect" id="edit-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを編集</button></div></section>`;
+      renderProfileIcon();
+      main.querySelector("#share-profile").addEventListener("click", async () => {
+        const shareUrl = new URL(window.location.href);
+        shareUrl.hash = "";
+        const shareText = `${appName}でゲーム好きの仲間を探しています 🎮\nエリア: ${areaName}`;
+        try {
+          if (navigator.share) {
+            await navigator.share({ title: `${appName}のプロフィール`, text: shareText, url: shareUrl.href });
+            return;
+          }
+          await navigator.clipboard.writeText(`${shareText}\n${shareUrl.href}`);
+          showToast("プロフィールの共有文とURLをコピーしました");
+        } catch (error) {
+          if (error.name === "AbortError") return;
+          console.error("プロフィールの共有に失敗しました", error);
+          showToast("共有できませんでした。もう一度お試しください");
+        }
+      });
+      main.querySelector("#edit-profile").addEventListener("click", () => showToast("プロフィール編集は準備中です"));
+    };
+    const renderSettings = () => {
+      main.innerHTML = `<section class="welcome"><div><div class="eyebrow">SETTINGS</div><h1>セッティング</h1><p>アプリの表示やプロフィールの設定を変更できます。</p></div></section>
+        <section style="display:grid;gap:10px">
+          <article style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <div><h2 style="font-size:13px;margin:0 0 5px">エリア</h2><p style="font-size:11px;color:var(--muted);margin:0">現在の設定: <strong id="settings-area"></strong></p></div>
+            <button class="connect" id="settings-area-edit" style="width:auto;margin:0;padding:8px 12px">変更する</button>
+          </article>
+          <article style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <div><h2 style="font-size:13px;margin:0 0 5px">プロフィールアイコン</h2><p style="font-size:11px;color:var(--muted);margin:0">絵文字または写真を設定できます。</p></div>
+            <button class="connect" id="settings-icon-edit" style="width:auto;margin:0;padding:8px 12px">変更する</button>
+          </article>
+          <article style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <div><h2 style="font-size:13px;margin:0 0 5px">アプリアイコン</h2><p style="font-size:11px;color:var(--muted);margin:0">緑色のアプリアイコンを変更できます。</p></div>
+            <button class="connect" id="settings-brand-icon-edit" style="width:auto;margin:0;padding:8px 12px">変更する</button>
+          </article>
+          <article style="padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <h2 style="font-size:13px;margin:0 0 5px">アプリの名前</h2>
+            <p style="font-size:11px;color:var(--muted);margin:0 0 12px">ヘッダーに表示する名前を変更できます。</p>
+            <form id="app-name-form" style="display:flex;gap:8px">
+              <input id="app-name-input" maxlength="30" required aria-label="アプリの名前" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:11px">
+              <button class="connect" type="submit" style="width:auto;margin:0;padding:8px 12px">保存</button>
+            </form>
+          </article>
+          <article style="padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <h2 style="font-size:13px;margin:0 0 5px">オンライン状態</h2>
+            <p style="font-size:11px;color:var(--muted);margin:0 0 12px">プロフィールアイコンの表示に反映されます。</p>
+            <div style="display:flex;gap:8px"><button class="connect" data-online-status="online" style="width:auto;margin:0;padding:8px 12px">オンライン</button><button class="connect" data-online-status="offline" style="width:auto;margin:0;padding:8px 12px">オフライン</button></div>
+          </article>
+          <article style="padding:17px;background:white;border:1px solid var(--line);border-radius:13px">
+            <h2 style="font-size:13px;margin:0 0 5px">ブロックリスト</h2>
+            <p style="font-size:11px;color:var(--muted);margin:0 0 12px">ブロックした人は人を見つける画面に表示されません。</p>
+            <form id="block-user-form" style="display:flex;gap:8px;margin-bottom:12px">
+              <input id="block-user-name" maxlength="40" required placeholder="ユーザー名" aria-label="ブロックするユーザー名" style="flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:11px">
+              <button class="connect" type="submit" style="width:auto;margin:0;padding:8px 12px">ブロック</button>
+            </form>
+            <div id="block-list">${blockedUsers.length ? blockedUsers.map((blocked) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line)"><span style="font-size:11px">${escapeHtml(blocked.name)}</span><button class="connect" data-unblock="${escapeHtml(blocked.id)}" style="width:auto;margin:0;padding:6px 10px">解除</button></div>`).join("") : '<p style="font-size:11px;color:var(--muted);margin:0">ブロックした人はいません。</p>'}</div>
+          </article>
+        </section>`;
+      main.querySelector("#settings-area").textContent = areaName;
+      main.querySelector("#app-name-input").value = appName;
+      main.querySelector("#app-name-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const newAppName = main.querySelector("#app-name-input").value.trim();
+        if (!newAppName) {
+          main.querySelector("#app-name-input").focus();
+          return;
+        }
+        appName = newAppName;
+        localStorage.setItem("mingle-app-name", appName);
+        renderAppName();
+        showToast("アプリの名前を変更しました");
+      });
+      main.querySelectorAll("[data-online-status]").forEach((button) => button.addEventListener("click", () => {
+        onlineStatus = button.dataset.onlineStatus;
+        localStorage.setItem("mingle-online-status", onlineStatus);
+        renderOnlineStatus();
+        showToast(`オンライン状態を${onlineStatus === "online" ? "オンライン" : "オフライン"}にしました`);
+      }));
+      renderOnlineStatus();
+      main.querySelector("#settings-area-edit").addEventListener("click", () => {
+        areaButton.click();
+        areaInput.focus();
+      });
+      main.querySelector("#settings-icon-edit").addEventListener("click", () => {
+        iconButton.click();
+      });
+      main.querySelector("#settings-brand-icon-edit").addEventListener("click", () => {
+        brandMark.click();
+      });
+      main.querySelector("#block-user-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = main.querySelector("#block-user-name").value.trim();
+        if (!name) return;
+        const matchedPerson = people.find((person) => person.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+        const id = matchedPerson ? String(matchedPerson.id) : `name:${name.toLocaleLowerCase()}`;
+        blockUser(id, matchedPerson?.name || name);
+      });
+      main.querySelectorAll("[data-unblock]").forEach((button) => button.addEventListener("click", () => {
+        const index = blockedUsers.findIndex((blocked) => blocked.id === button.dataset.unblock);
+        if (index === -1) return;
+        const [unblocked] = blockedUsers.splice(index, 1);
+        saveBlockedUsers();
+        showToast(`${unblocked.name}さんのブロックを解除しました`);
+        renderSettings();
+      }));
+    };
+    function escapeHtml(value) {
+      return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+    }
+    function render() {
+      if (activePage === "discover") renderDiscover();
+      else if (activePage === "events") renderEvents();
+      else if (activePage === "messages") renderMessages();
+      else if (activePage === "profile") renderProfile();
+      else renderSettings();
+    }
+    document.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => setPage(button.dataset.page)));
+    renderAreaName();
+    renderProfileIcon();
+    renderOnlineStatus();
+    renderBrandIcon();
+    renderAppName();
+    render();
+  </script>
+</body>
+</html>
