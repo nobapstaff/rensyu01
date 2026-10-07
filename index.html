@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f7f8f5">
   <meta name="description" content="好きなことから、新しいつながりを。趣味でつながるコミュニティアプリ。">
-  <title>mingle — 好きなことで、つながろう。</title>
+  <title>ぷにフレ — 好きなことで、つながろう。</title>
   <style>
     :root {
       color-scheme: light;
@@ -108,6 +108,22 @@
     .connect { width: 100%; border: 1px solid #dfe7dd; border-radius: 8px; background: white; color: var(--green); padding: 8px; margin-top: 13px; font-size: 10px; font-weight: 700; transition: .18s; }
     .connect:hover, .connect.connected { background: var(--green); color: white; border-color: var(--green); }
     .empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 45px 10px; background: white; border: 1px solid var(--line); border-radius: 14px; font-size: 13px; }
+    .chat-list { display: grid; gap: 9px; }
+    .chat-person { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 11px; background: white; text-align: left; }
+    .chat-person:hover { border-color: #b9c9b8; background: #fcfdfb; }
+    .chat-person-info { flex: 1; min-width: 0; }
+    .chat-preview { overflow: hidden; margin-top: 4px; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-panel { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    .chat-header { display: flex; align-items: center; gap: 11px; padding: 13px 15px; border-bottom: 1px solid var(--line); }
+    .chat-back { border: 0; background: transparent; color: var(--green); font-size: 11px; font-weight: 650; }
+    .chat-log { display: flex; flex-direction: column; gap: 9px; min-height: 250px; max-height: 50vh; overflow-y: auto; padding: 16px; }
+    .chat-empty { margin: auto; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.8; }
+    .chat-message { max-width: min(80%, 360px); padding: 9px 12px; border-radius: 13px; font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .chat-message.mine { align-self: flex-end; border-bottom-right-radius: 4px; background: var(--green); color: white; }
+    .chat-message.theirs { align-self: flex-start; border-bottom-left-radius: 4px; background: #f1f3ee; color: var(--ink); }
+    .chat-compose { display: flex; align-items: end; gap: 8px; padding: 11px; border-top: 1px solid var(--line); }
+    .chat-compose textarea { flex: 1; min-width: 0; min-height: 40px; max-height: 110px; padding: 10px; resize: vertical; border: 1px solid var(--line); border-radius: 9px; outline-color: var(--green); font: inherit; font-size: 12px; }
+    .chat-compose button { flex: 0 0 auto; width: auto; margin: 0; padding: 10px 14px; }
     .event-banner { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 25px; padding: 19px 21px; border-radius: 13px; background: #eff2e9; }
     .event-banner .event-kicker { color: var(--green); font-size: 9px; font-weight: 700; letter-spacing: 1.1px; }
     .event-banner h3 { margin: 5px 0 3px; font-size: 13px; }
@@ -185,7 +201,7 @@
       <aside>
         <p class="nav-label">メニュー</p>
         <nav class="nav" aria-label="メインメニュー">
-          <button class="active" data-page="discover"><span class="nav-icon">⌕</span>ヒトをミツケル</button>
+          <button class="active" data-page="discover"><span class="nav-icon">⌕</span>フレンドを探そう</button>
           <button data-page="messages"><span class="nav-icon">▱</span>メッセージ</button>
           <button data-page="profile"><span class="nav-icon">◉</span>プロフィール</button>
           <button data-page="settings"><span class="nav-icon">⚙</span>セッティング</button>
@@ -196,7 +212,7 @@
     </div>
   </div>
   <nav class="mobile-nav" aria-label="モバイルメニュー">
-    <button class="active" data-page="discover"><span>⌕</span>ミツケル</button>
+    <button class="active" data-page="discover"><span>⌕</span>フレンドを探そう</button>
     <button data-page="messages"><span>▱</span>メッセージ</button>
     <button data-page="profile"><span>◉</span>プロフィール</button>
     <button data-page="settings"><span>⚙</span>セッティング</button>
@@ -204,22 +220,27 @@
   <div class="toast" role="status" aria-live="polite"></div>
   <script>
     const people = [];
-    const interests = ["ゲーム"];
-    let activeInterest = "ゲーム";
+    const addedFriends = JSON.parse(localStorage.getItem("mingle-added-friends") || "[]");
+    let userProfile = JSON.parse(localStorage.getItem("mingle-user-profile") || '{"name":"","game":"","bio":""}');
     let areaName = localStorage.getItem("mingle-area") || "東京・渋谷";
     let profileIcon = localStorage.getItem("mingle-profile-icon") || "🌿";
     let profilePhoto = localStorage.getItem("mingle-profile-photo");
     let onlineStatus = localStorage.getItem("mingle-online-status") || "online";
     const blockedUsers = JSON.parse(localStorage.getItem("mingle-blocked-users") || "[]");
+    const conversations = JSON.parse(localStorage.getItem("mingle-conversations") || "{}");
     const adminCode = "8099";
     const profileIcons = ["🌿", "😊", "😎", "🐱", "🐶", "🐼", "🦊", "🐸", "🌸", "🎮"];
     let brandIcon = localStorage.getItem("mingle-brand-icon") || "m";
     let brandPhoto = localStorage.getItem("mingle-brand-photo");
-    let appName = localStorage.getItem("mingle-app-name") || "mingle";
+    let appName = localStorage.getItem("mingle-app-name") || "ぷにフレ";
+    if (appName === "mingle") {
+      appName = "ぷにフレ";
+      localStorage.setItem("mingle-app-name", appName);
+    }
     const brandIcons = ["m", "🎮", "🕹️", "🎲", "👾", "⭐", "💚", "✨", "🎯", "♟️"];
     let activePage = "discover";
+    let activeConversationId = null;
     let adminAuthenticated = false;
-    let searchTerm = "";
     const connected = new Set();
     const joinedEvents = new Set();
     const main = document.querySelector("#main");
@@ -419,27 +440,57 @@
       render();
     };
     const renderDiscover = () => {
-      const filtered = people.filter((person) => {
-        if (blockedUsers.some((blocked) => blocked.id === String(person.id))) return false;
-        const matchesInterest = person.tags.includes(activeInterest);
-        const text = `${person.name} ${person.area} ${person.bio} ${person.tags.join(" ")}`.toLowerCase();
-        return matchesInterest && text.includes(searchTerm.toLowerCase());
-      });
+      const allPeople = [...people, ...addedFriends];
+      const filtered = allPeople.filter((person) => !blockedUsers.some((blocked) => blocked.id === String(person.id)));
       main.innerHTML = `
         <section class="welcome">
-          <div><div class="eyebrow">FIND YOUR PEOPLE</div><h1>好きなことで、つながろう。</h1><p>共通の「好き」がある人を見つけてみませんか？</p></div>
+          <div><div class="eyebrow">FIND YOUR PEOPLE</div><h1>好きなことを探そう。</h1><p>共通の「好き」があるフレンドを見つけてみませんか？</p></div>
           <div class="date">今日、新しい出会いを。</div>
         </section>
-        <label class="search-row"><span class="searchbox"><span>⌕</span><input id="search" type="search" placeholder="名前や趣味で検索..." value="${escapeHtml(searchTerm)}"></span></label>
-        <section><div class="section-heading"><h2>興味のあること</h2></div>
-          <div class="chips">${interests.map((interest) => `<button class="chip ${interest === activeInterest ? "selected" : ""}" data-interest="${interest}">🎮 ${interest}</button>`).join("")}</div>
-        </section>
+        <form id="add-friend-form" style="display:flex;gap:8px;margin-bottom:20px">
+          <input id="friend-name" maxlength="40" required placeholder="フレンドの名前を入力..." aria-label="フレンドの名前" style="flex:1;min-width:0;height:42px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:12px">
+          <button class="connect" type="submit" style="width:auto;margin:0;padding:0 15px">フレンドに追加</button>
+        </form>
         <section><div class="section-heading"><h2>ゲーム好きの人 <span style="color:#92988f;font-weight:400">· ${filtered.length}人</span></h2></div>
           <div class="people-grid">${filtered.length ? filtered.map(personCard).join("") : '<div class="empty-state">まだメンバーはいません。</div>'}</div>
         </section>
         `;
-      main.querySelector("#search").addEventListener("input", (event) => { searchTerm = event.target.value; renderDiscover(); const input = main.querySelector("#search"); input.focus(); input.setSelectionRange(searchTerm.length, searchTerm.length); });
-      main.querySelectorAll("[data-interest]").forEach((button) => button.addEventListener("click", () => { activeInterest = button.dataset.interest; render(); }));
+      main.querySelector("#add-friend-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const name = main.querySelector("#friend-name").value.trim();
+        if (!name) return;
+        const normalizedName = name.toLocaleLowerCase();
+        if (addedFriends.some((friend) => friend.name.toLocaleLowerCase() === normalizedName)) {
+          showToast("この名前のフレンドはすでに追加されています");
+          return;
+        }
+        const friend = {
+          id: `name:${normalizedName}`,
+          name,
+          age: "",
+          area: areaName,
+          emoji: "🎮",
+          color: "#e8f0e8",
+          online: false,
+          bio: "名前から追加したフレンドです。",
+          tags: ["ゲーム"],
+          isAddedFriend: true
+        };
+        if (blockedUsers.some((blocked) => blocked.id === friend.id)) {
+          showToast("この名前はブロックリストに登録されています");
+          return;
+        }
+        try {
+          addedFriends.push(friend);
+          localStorage.setItem("mingle-added-friends", JSON.stringify(addedFriends));
+          showToast(`${name}さんをフレンドに追加しました`);
+          renderDiscover();
+        } catch (error) {
+          addedFriends.pop();
+          console.error("フレンドの保存に失敗しました", error);
+          showToast("フレンドを保存できませんでした");
+        }
+      });
       main.querySelectorAll("[data-connect]").forEach((button) => button.addEventListener("click", () => {
         const id = Number(button.dataset.connect);
         if (connected.has(id)) { connected.delete(id); showToast("つながりを解除しました"); }
@@ -447,7 +498,7 @@
         renderDiscover();
       }));
       main.querySelectorAll("[data-block-person]").forEach((button) => button.addEventListener("click", () => {
-        const person = people.find((entry) => String(entry.id) === button.dataset.blockPerson);
+        const person = allPeople.find((entry) => String(entry.id) === button.dataset.blockPerson);
         if (person) blockUser(String(person.id), person.name);
       }));
     };
@@ -464,11 +515,11 @@
       render();
     };
     function personCard(person) {
-      return `<article class="person-card"><div class="card-top"><div class="avatar" style="background:${person.color}">${person.emoji}</div><span class="online">${person.online ? "オンライン" : "最近アクティブ"}</span></div>
-        <h3>${person.name} <span style="font-weight:400;color:#73796f">${person.age}</span></h3><div class="person-meta">📍 ${person.area} · あなたの近く</div>
-        <p class="person-bio">${person.bio}</p><div class="tags">${person.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
-        <button class="connect ${connected.has(person.id) ? "connected" : ""}" data-connect="${person.id}">${connected.has(person.id) ? "✓　つながり申請中" : "+　つながりたい"}</button>
-        <button class="connect" data-block-person="${person.id}" style="margin-top:6px;color:#8a554b">ブロック</button></article>`;
+      return `<article class="person-card"><div class="card-top"><div class="avatar" style="background:${person.color}">${escapeHtml(person.emoji)}</div><span class="online">${person.online ? "オンライン" : "最近アクティブ"}</span></div>
+        <h3>${escapeHtml(person.name)} ${person.age ? `<span style="font-weight:400;color:#73796f">${escapeHtml(String(person.age))}</span>` : ""}</h3><div class="person-meta">📍 ${escapeHtml(person.area)} · あなたの近く</div>
+        <p class="person-bio">${escapeHtml(person.bio)}</p><div class="tags">${person.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+        ${person.isAddedFriend ? '<button class="connect connected" type="button" disabled>✓　フレンド</button>' : `<button class="connect ${connected.has(person.id) ? "connected" : ""}" data-connect="${escapeHtml(String(person.id))}">${connected.has(person.id) ? "✓　つながり申請中" : "+　つながりたい"}</button>`}
+        <button class="connect" data-block-person="${escapeHtml(String(person.id))}" style="margin-top:6px;color:#8a554b">ブロック</button></article>`;
     }
     const events = [];
     const renderEvents = () => {
@@ -483,21 +534,112 @@
       }));
     };
     const renderMessages = () => {
-      const matches = people.filter((person) => connected.has(person.id) && !blockedUsers.some((blocked) => blocked.id === String(person.id)));
+      const matches = [...people.filter((person) => connected.has(person.id)), ...addedFriends]
+        .filter((person) => !blockedUsers.some((blocked) => blocked.id === String(person.id)));
+      if (activeConversationId !== null) {
+        const person = matches.find((entry) => String(entry.id) === activeConversationId);
+        if (!person) {
+          activeConversationId = null;
+          renderMessages();
+          return;
+        }
+        const messages = conversations[activeConversationId] || [];
+        main.innerHTML = `<section class="welcome"><div><div class="eyebrow">SAY HELLO</div><h1>メッセージ</h1><p>${escapeHtml(person.name)}さんとの会話</p></div></section>
+          <section class="chat-panel">
+            <div class="chat-header">
+              <button class="chat-back" id="chat-back">← 一覧</button>
+              <span class="avatar" style="width:42px;height:42px;background:${escapeHtml(person.color)};font-size:20px">${escapeHtml(person.emoji)}</span>
+              <strong style="font-size:12px">${escapeHtml(person.name)}</strong>
+            </div>
+            <div class="chat-log" id="chat-log" aria-live="polite">${messages.length ? messages.map((message) => `<div class="chat-message ${message.sender === "me" ? "mine" : "theirs"}">${escapeHtml(message.text)}</div>`).join("") : '<div class="chat-empty">まだメッセージはありません。<br>最初のメッセージを送ってみましょう！</div>'}</div>
+            <form class="chat-compose" id="chat-compose">
+              <textarea id="chat-input" maxlength="1000" rows="1" aria-label="メッセージ" placeholder="メッセージを入力..." required></textarea>
+              <button class="connect" type="submit">送信</button>
+            </form>
+          </section>`;
+        main.querySelector("#chat-back").addEventListener("click", () => {
+          activeConversationId = null;
+          renderMessages();
+        });
+        main.querySelector("#chat-compose").addEventListener("submit", (event) => {
+          event.preventDefault();
+          const input = main.querySelector("#chat-input");
+          const text = input.value.trim();
+          if (!text) return;
+          const conversation = conversations[activeConversationId] || [];
+          conversation.push({ sender: "me", text, sentAt: new Date().toISOString() });
+          try {
+            localStorage.setItem("mingle-conversations", JSON.stringify({ ...conversations, [activeConversationId]: conversation }));
+            conversations[activeConversationId] = conversation;
+            renderMessages();
+            main.querySelector("#chat-log").scrollTop = main.querySelector("#chat-log").scrollHeight;
+          } catch (error) {
+            conversation.pop();
+            console.error("メッセージの保存に失敗しました", error);
+            showToast("メッセージを保存できませんでした");
+          }
+        });
+        return;
+      }
       main.innerHTML = `<section class="welcome"><div><div class="eyebrow">SAY HELLO</div><h1>メッセージ</h1><p>つながりたいを送った人との会話はこちらから。</p></div></section>
-        <section style="padding:35px 20px;text-align:center;background:white;border:1px solid var(--line);border-radius:14px">${matches.length ? `<div style="display:grid;gap:10px">${matches.map((person) => `<button data-message="${person.id}" style="display:flex;align-items:center;gap:12px;text-align:left;background:white;border:1px solid var(--line);border-radius:11px;padding:12px"><span class="avatar" style="width:44px;height:44px;background:${person.color};font-size:21px">${person.emoji}</span><span><strong style="font-size:12px">${person.name}</strong><br><span style="font-size:10px;color:var(--muted)">つながり申請中 · メッセージを送ってみましょう</span></span></button>`).join("")}</div>` : `<div style="font-size:31px">💬</div><h3 style="font-size:14px">これから始まる会話があります</h3><p style="font-size:11px;color:var(--muted);line-height:1.9">気になる人に「つながりたい」を送ると、<br>ここからメッセージを始められます。</p><button class="connect" id="find-people" style="max-width:200px">人を見つける →</button>`}</section>`;
+        ${matches.length ? `<section class="chat-list">${matches.map((person) => {
+          const lastMessage = conversations[String(person.id)]?.at(-1);
+          const preview = lastMessage ? lastMessage.text : "タップしてメッセージを送る";
+          return `<button class="chat-person" data-message="${escapeHtml(String(person.id))}"><span class="avatar" style="width:44px;height:44px;background:${escapeHtml(person.color)};font-size:21px">${escapeHtml(person.emoji)}</span><span class="chat-person-info"><strong style="font-size:12px">${escapeHtml(person.name)}</strong><span class="chat-preview">${escapeHtml(preview)}</span></span><span aria-hidden="true" style="color:var(--muted)">›</span></button>`;
+        }).join("")}</section>` : `<section style="padding:35px 20px;text-align:center;background:white;border:1px solid var(--line);border-radius:14px"><div style="font-size:31px">💬</div><h3 style="font-size:14px">メッセージを始めましょう</h3><p style="font-size:11px;color:var(--muted);line-height:1.9">フレンドを追加すると、ここから<br>メッセージを送れるようになります。</p><button class="connect" id="find-people" style="max-width:200px">フレンドを探そう →</button></section>`}`;
       main.querySelector("#find-people")?.addEventListener("click", () => setPage("discover"));
-      main.querySelectorAll("[data-message]").forEach((button) => button.addEventListener("click", () => showToast("メッセージ機能は準備中です")));
+      main.querySelectorAll("[data-message]").forEach((button) => button.addEventListener("click", () => {
+        activeConversationId = button.dataset.message;
+        renderMessages();
+      }));
     };
     const renderProfile = () => {
       main.innerHTML = `<section class="welcome"><div><div class="eyebrow">YOUR PROFILE</div><h1>プロフィール</h1><p>あなたの「好き」をシェアしよう。</p></div></section>
-        <section style="padding:25px;background:white;border:1px solid var(--line);border-radius:14px;text-align:center"><div id="profile-avatar" style="font-size:30px"></div><h2 style="font-size:14px;margin:10px 0">プロフィールは未登録です</h2><p style="font-size:11px;color:#6c7369;line-height:1.9;margin:10px 0 19px">プロフィール登録機能は準備中です。</p>
-        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap"><button class="connect" id="share-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを共有</button><button class="connect" id="edit-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを編集</button></div></section>`;
+        <section style="padding:25px;background:white;border:1px solid var(--line);border-radius:14px;text-align:center">
+          <div id="profile-avatar" style="font-size:30px"></div>
+          <h2 style="font-size:16px;margin:10px 0">${userProfile.name ? escapeHtml(userProfile.name) : "プロフィール未登録"}</h2>
+          ${userProfile.game ? `<p style="font-size:11px;color:var(--green);margin:5px 0">🎮 ${escapeHtml(userProfile.game)}</p>` : ""}
+          <p style="font-size:11px;color:#6c7369;line-height:1.9;margin:10px 0 19px;white-space:pre-wrap">${userProfile.bio ? escapeHtml(userProfile.bio) : "名前や好きなゲーム、自己紹介を登録できます。"}</p>
+          <form id="profile-form" hidden style="max-width:420px;margin:0 auto 16px;text-align:left">
+            <label for="profile-name" style="display:block;margin:0 0 5px;font-size:11px;font-weight:650">ニックネーム</label>
+            <input id="profile-name" maxlength="40" value="${escapeHtml(userProfile.name)}" placeholder="ニックネーム" style="width:100%;height:38px;margin-bottom:12px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px">
+            <label for="profile-game" style="display:block;margin:0 0 5px;font-size:11px;font-weight:650">好きなゲーム</label>
+            <input id="profile-game" maxlength="60" value="${escapeHtml(userProfile.game)}" placeholder="例: 協力ゲーム、RPG" style="width:100%;height:38px;margin-bottom:12px;padding:0 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px">
+            <label for="profile-bio" style="display:block;margin:0 0 5px;font-size:11px;font-weight:650">自己紹介</label>
+            <textarea id="profile-bio" maxlength="300" rows="4" placeholder="好きな遊び方や一緒に遊びたいことを書いてみましょう" style="width:100%;margin-bottom:12px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:12px;resize:vertical">${escapeHtml(userProfile.bio)}</textarea>
+            <div style="display:flex;justify-content:center;gap:8px"><button class="connect" type="submit" style="width:auto;margin:0;padding:9px 14px">保存する</button><button class="connect" id="cancel-profile" type="button" style="width:auto;margin:0;padding:9px 14px">キャンセル</button></div>
+          </form>
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap"><button class="connect" id="share-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを共有</button><button class="connect" id="edit-profile" style="width:auto;padding:9px 14px;margin:0">プロフィールを編集</button></div>
+        </section>`;
       renderProfileIcon();
+      main.querySelector("#edit-profile").addEventListener("click", () => {
+        main.querySelector("#profile-form").hidden = false;
+        main.querySelector("#edit-profile").hidden = true;
+        main.querySelector("#share-profile").hidden = true;
+        main.querySelector("#profile-name").focus();
+      });
+      main.querySelector("#cancel-profile").addEventListener("click", renderProfile);
+      main.querySelector("#profile-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const updatedProfile = {
+          name: main.querySelector("#profile-name").value.trim(),
+          game: main.querySelector("#profile-game").value.trim(),
+          bio: main.querySelector("#profile-bio").value.trim()
+        };
+        try {
+          localStorage.setItem("mingle-user-profile", JSON.stringify(updatedProfile));
+          userProfile = updatedProfile;
+          showToast("プロフィールを保存しました");
+          renderProfile();
+        } catch (error) {
+          console.error("プロフィールの保存に失敗しました", error);
+          showToast("保存できませんでした。入力内容を減らしてお試しください");
+        }
+      });
       main.querySelector("#share-profile").addEventListener("click", async () => {
         const shareUrl = new URL(window.location.href);
         shareUrl.hash = "";
-        const shareText = `${appName}でゲーム好きの仲間を探しています 🎮\nエリア: ${areaName}`;
+        const shareText = `${userProfile.name ? `${userProfile.name}のプロフィール\n` : ""}${appName}でゲーム好きの仲間を探しています 🎮${userProfile.game ? `\n好きなゲーム: ${userProfile.game}` : ""}${userProfile.bio ? `\n${userProfile.bio}` : ""}\nエリア: ${areaName}`;
         try {
           if (navigator.share) {
             await navigator.share({ title: `${appName}のプロフィール`, text: shareText, url: shareUrl.href });
@@ -511,7 +653,6 @@
           showToast("共有できませんでした。もう一度お試しください");
         }
       });
-      main.querySelector("#edit-profile").addEventListener("click", () => showToast("プロフィール編集は準備中です"));
     };
     const renderSettings = () => {
       if (!adminAuthenticated) {
